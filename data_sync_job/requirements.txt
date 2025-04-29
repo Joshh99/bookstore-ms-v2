@@ -1,0 +1,3 @@
+sqlmodel
+pymongo
+python-dotenv

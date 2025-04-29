@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: customer-service
+  namespace: bookstore-ns
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: customer-service
+  template:
+    metadata:
+      labels:
+        app: customer-service
+    spec:
+      containers:
+      - name: customer-service
+        image: dnanam/CustomerService:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: bookstore-secrets
+              key: database-url
+        - name: KAFKA_BROKER
+          value: 3.129.102.184:9092,18.118.230.221:9093,3.130.6.49:9094  # From Canvas
+        - name: KAFKA_TOPIC
+          value: dnanam.customer.evt
+        - name: IS_DEBUGGING
+          value: "false"
+        - name: APP_URL
+          value: a6f819f0823d047b7a3d4b7d84bc6755-523274936.us-east-1.elb.amazonaws.com
+        livenessProbe:
+          httpGet:
+            path: /customers/status
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10

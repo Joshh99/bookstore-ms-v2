@@ -1,0 +1,9 @@
+fastapi
+sqlmodel
+mysqlclient
+uvicorn
+python-dotenv
+pydantic
+email-validator
+SQLAlchemy
+httpx
