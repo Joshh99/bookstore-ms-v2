@@ -11,7 +11,7 @@ spec:
         spec:
           containers:
           - name: book-data-sync
-            image: ddnanam/data_sync_job:latest
+            image: joshh99/data_sync_job:latest
             env:
             - name: DATABASE_URL
               valueFrom:
