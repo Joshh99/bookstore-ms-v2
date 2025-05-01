@@ -15,8 +15,10 @@ app = FastAPI()
 load_dotenv()
 
 
+# Updated URL environment variables
 CUSTOMER_URL = os.getenv("CUSTOMER_URL")
-BOOK_URL = os.getenv("BOOK_URL")
+BOOK_COMMAND_URL = os.getenv("BOOK_COMMAND_URL")  # For write operations
+BOOK_QUERY_URL = os.getenv("BOOK_QUERY_URL")      # For read operations
 
 #custom exception handler to intercept HTTPExcetions
 @app.exception_handler(HTTPException)
@@ -47,48 +49,72 @@ async def check_jwt(request: Request, call_next):
         return JSONResponse(status_code=401, content={"message": "Invalid or missing token"})
     return await call_next(request)
 
-# endpoint to add a book
+# Write operations - route to Book Command service
 @app.post("/books", response_model=BookResponse, status_code=201)
 async def add_book(book: BookCreate):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"{BOOK_URL}/books", json=dict(book))
+        # Notice the /cmd/ path added to the URL
+        response = await client.post(f"{BOOK_COMMAND_URL}/cmd/books", json=dict(book))
         if response.status_code != 201:
             raise HTTPException(status_code=response.status_code, detail=response.json().get("message"))
         return response.json()
 
-# Endpoint to update a book
-@app.put("/books/{ISBN}" , response_model=BookResponse)
+@app.put("/books/{ISBN}", response_model=BookResponse)
 async def update_book(ISBN: str, book: BookCreate):
     async with httpx.AsyncClient() as client:
-        response = await client.put(f"{BOOK_URL}/books/{ISBN}", json=dict(book))
+        # Notice the /cmd/ path added to the URL
+        response = await client.put(f"{BOOK_COMMAND_URL}/cmd/books/{ISBN}", json=dict(book))
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json().get("message"))
         book_data = response.json()
         return book_data
 
-# Endpoint to get books
+# Read operations - route to Book Query service
 @app.get("/books/{ISBN}", response_model=BookResponse)
 @app.get("/books/isbn/{ISBN}", response_model=BookResponse)
 async def get_book(ISBN: str):
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BOOK_URL}/books/{ISBN}")
+        response = await client.get(f"{BOOK_QUERY_URL}/books/{ISBN}")
         if response.status_code != 200:
             raise HTTPException(status_code=response.status_code, detail=response.json().get("message"))
         book_data = response.json()
+        # Mobile BFF specific genre transformation
         if book_data.get("genre") == "non-fiction":
             book_data["genre"] = 3
         return book_data
 
-
-@app.get("/books/{ISBN}/related-books")
-async def get_recommend_book(ISBN: str):
+# Add new search endpoint
+@app.get("/books")
+async def search_books(keyword: str = Query(...)):
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"{BOOK_URL}/books/{ISBN}/related-books")
+        response = await client.get(f"{BOOK_QUERY_URL}/books?keyword={keyword}")
+        
+        # Handle 204 No Content
         if response.status_code == 204:
             return Response(status_code=204)
+            
+        # Handle errors
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.json().get("message"))
+        
+        # Apply mobile-specific transformations to the result set
+        books = response.json()
+        for book in books:
+            if book.get("genre") == "non-fiction":
+                book["genre"] = 3
+                
+        return books
+
+@app.get("/books/{ISBN}/related-books")
+async def get_related_books(ISBN: str):
+    async with httpx.AsyncClient() as client:
+        response = await client.get(f"{BOOK_QUERY_URL}/books/{ISBN}/related-books")
+        if response.status_code == 204:
+            return Response(status_code=204)
+        if response.status_code not in (200, 204):
+            raise HTTPException(status_code=response.status_code, detail=response.json().get("message"))
         book_data = response.json()
         return JSONResponse(content=book_data, status_code=response.status_code)
-
 
 
 #add a new customer

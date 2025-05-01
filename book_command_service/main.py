@@ -1,31 +1,23 @@
-from contextlib import asynccontextmanager  # Add for lifespan
-from fastapi import FastAPI, HTTPException, status, Request, Query
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, status, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse,Response, PlainTextResponse
-from pydantic import BaseModel, constr, field_validator, Field, StrictInt, StrictFloat
+from fastapi.responses import JSONResponse, PlainTextResponse
 from sqlalchemy.exc import IntegrityError
-from database import Book, create_db_and_tables, engine, Session, select,APP_URL  # Import from database.py
+from database import Book, create_db_and_tables, engine, Session, select, APP_URL
 from schemas import BookCreate
-import httpx
-import time
 import os
-import json
 
-
-# Lifespan handler to manage startup and shutdown
+# Lifespan handler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Create database tables
+    # Create database tables
     create_db_and_tables()
     yield
-# Initialize FastAPI app with lifespan
+
+# Initialize FastAPI app
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/status")
-async def status():
-    return {"status": "ok"}
-
-#custom exception handler to intercept HTTPExcetions
+# Exception handlers
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -34,8 +26,6 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         headers=exc.headers,
     )
 
-
-# Overwrite 422 error with 400
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -43,7 +33,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"message": exc.errors()},
     )
 
-# Handler for database integrity errors
 @app.exception_handler(IntegrityError)
 async def integrity_exception_handler(request: Request, exc: IntegrityError):
     return JSONResponse(
@@ -51,13 +40,12 @@ async def integrity_exception_handler(request: Request, exc: IntegrityError):
         content={"message": f"Database error: {str(exc.orig)}"}
     )
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+# Status endpoint for liveness probe
+@app.get("/status", status_code=status.HTTP_200_OK, response_class=PlainTextResponse)
+async def get_status():
+    return "OK"
 
-
-
-# Endpoint to add a book
+# Command endpoints with /cmd/ path prefix
 @app.post("/cmd/books")
 async def add_book(book_data: BookCreate):
     with Session(engine) as session:
@@ -73,7 +61,6 @@ async def add_book(book_data: BookCreate):
         response.status_code = status.HTTP_201_CREATED
         return response
 
-# Endpoint to update a book
 @app.put("/cmd/books/{ISBN}")
 async def update_book(ISBN: str, book: BookCreate):
     if book.__pydantic_fields_set__.__len__() != book.model_fields.__len__():
@@ -92,11 +79,3 @@ async def update_book(ISBN: str, book: BookCreate):
         response = JSONResponse(content=dict(db_book))
         response.status_code = status.HTTP_200_OK
         return response
-
-
-
-
-
-
-
-
