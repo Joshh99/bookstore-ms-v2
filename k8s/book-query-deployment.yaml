@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-query-service
+  namespace: bookstore-ns
+spec:
+  replicas: 2  # Can have multiple replicas for read operations
+  selector:
+    matchLabels:
+      app: book-query-service
+  template:
+    metadata:
+      labels:
+        app: book-query-service
+    spec:
+      containers:
+      - name: book-query-service
+        image: dnanam/book_query_service:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGO_URI
+          valueFrom:
+            secretKeyRef:
+              name: bookstore-secrets
+              key: mongo-uri
+        - name: RECOMMENDATION_URL
+          value: http://18.118.230.221/recommended-titles/isbn
+        - name: IS_DEBUGGING
+          value: "false"
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
+        - name: circuit-state
+          mountPath: /circuit_state
+      volumes:
+      - name: circuit-state
+        emptyDir: {}

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: book-command-service
+  namespace: bookstore-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: book-command-service
+  template:
+    metadata:
+      labels:
+        app: book-command-service
+    spec:
+      containers:
+      - name: book-command-service
+        image: dnanam/book_command_service:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: bookstore-secrets
+              key: database-url
+        - name: IS_DEBUGGING
+          value: "false"
+        - name: APP_URL
+          value: a6f819f0823d047b7a3d4b7d84bc6755-523274936.us-east-1.elb.amazonaws.com
+        livenessProbe:
+          httpGet:
+            path: /status
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 10
