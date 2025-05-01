@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: mobile-bff
-        image: ddnanam/mobile_bff:latest
+        image: joshh99/mobile_bff:latest
         ports:
         - containerPort: 80
         env:

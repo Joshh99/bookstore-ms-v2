@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: customer-service
-        image: dnanam/CustomerService:latest
+        image: joshh99/customer_service:latest
         ports:
         - containerPort: 3000
         env:
@@ -27,7 +27,7 @@ spec:
         - name: KAFKA_BROKER
           value: 3.129.102.184:9092,18.118.230.221:9093,3.130.6.49:9094  # From Canvas
         - name: KAFKA_TOPIC
-          value: dnanam.customer.evt
+          value: jmomo.customer.evt
         - name: IS_DEBUGGING
           value: "false"
         - name: APP_URL

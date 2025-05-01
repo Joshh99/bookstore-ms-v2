@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: web-bff
-        image: ddnanam/web_bff:latest
+        image: joshh99/web_bff:latest
         ports:
         - containerPort: 80
         env:

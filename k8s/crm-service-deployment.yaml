@@ -15,12 +15,12 @@ spec:
     spec:
       containers:
       - name: crm-service
-        image: ddnanam/crm_service:latest
+        image: joshh99/crm_service:latest
         env:
         - name: KAFKA_BROKER
           value: 3.129.102.184:9092,18.118.230.221:9093,3.130.6.49:9094
         - name: KAFKA_TOPIC
-          value: dnanam.customer.evt
+          value: jmomo.customer.evt
         - name: SMTP_HOST
           value: smtp.gmail.com
         - name: SMTP_PORT
@@ -29,11 +29,11 @@ spec:
           valueFrom:
             secretKeyRef:
               name: bookstore-secrets
-              key: joshuawisdom92@gmail.com
+              key: smtp-user 
         - name: SMTP_PASSWORD
           valueFrom:
             secretKeyRef:
               name: bookstore-secrets
-              key: dvps rgdd hron aytz
+              key: smtp-password
         - name: ANDREW_ID
           value: jmomo

@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: book-service
-        image: dnanam/book_service:latest
+        image: joshh99/book_service:latest
         ports:
         - containerPort: 3000
         env:
